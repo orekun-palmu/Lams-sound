@@ -193,6 +193,58 @@
     .pad:hover .pad-delete { opacity: 1; }
     .pad-delete:hover { color: var(--danger) !important; }
 
+    /* pad controls: volume + loop */
+    .pad-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+      margin-top: 2px;
+    }
+    .pad-vol {
+      -webkit-appearance: none;
+      flex: 1;
+      height: 3px;
+      background: var(--border);
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+    .pad-vol::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 11px; height: 11px;
+      border-radius: 50%;
+      background: var(--muted);
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .pad-vol:hover::-webkit-slider-thumb { background: var(--accent-hi); }
+    .pad-loop {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.65rem;
+      border-radius: 4px;
+      padding: 2px 5px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: border-color .15s, color .15s, background .15s;
+      line-height: 1.4;
+    }
+    .pad-loop:hover { border-color: var(--accent); color: var(--accent-hi); }
+    .pad-loop.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .pad-vol-label {
+      font-size: 0.6rem;
+      color: var(--muted);
+      font-family: 'Share Tech Mono', monospace;
+      min-width: 26px;
+      text-align: right;
+    }
+
     /* ── Add Panel ── */
     .add-panel {
       background: var(--panel);
@@ -438,13 +490,18 @@ COLORS.forEach((c, i) => {
 
 // ── Load presets from sounds.json ─────────────────────────
 async function loadPresets() {
+  // index.html と同じディレクトリの sounds.json を確実に参照
+  const base = location.href.replace(/\/[^/]*$/, '/');
+  const url  = base + 'sounds.json';
   try {
-    const res = await fetch('sounds.json');
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     renderPads(data, document.getElementById('presetGrid'), false);
   } catch (e) {
+    console.warn('sounds.json load failed:', e);
     document.getElementById('presetGrid').innerHTML =
-      '<p style="color:var(--muted);font-size:.8rem;grid-column:1/-1">sounds.json が見つかりません。リポジトリに配置してください。</p>';
+      '<p style="color:var(--muted);font-size:.8rem;grid-column:1/-1">⚠ sounds.json が読み込めませんでした（コンソールで詳細確認）</p>';
   }
 }
 
@@ -492,10 +549,48 @@ function renderPads(sounds, container, isDeletable) {
     lbl.className = 'pad-label';
     lbl.textContent = s.label;
 
+    // volume slider + loop button + label
+    const controls = document.createElement('div');
+    controls.className = 'pad-controls';
+
+    const volSlider = document.createElement('input');
+    volSlider.type = 'range';
+    volSlider.className = 'pad-vol';
+    volSlider.min = 0; volSlider.max = 1; volSlider.step = 0.05;
+    volSlider.value = 0.8;
+
+    const volLabel = document.createElement('span');
+    volLabel.className = 'pad-vol-label';
+    volLabel.textContent = '80%';
+
+    volSlider.oninput = (e) => {
+      e.stopPropagation();
+      volLabel.textContent = Math.round(volSlider.value * 100) + '%';
+      if (pad._audio) pad._audio.volume = parseFloat(volSlider.value);
+    };
+    volSlider.onclick = (e) => e.stopPropagation();
+
+    const loopBtn = document.createElement('button');
+    loopBtn.className = 'pad-loop';
+    loopBtn.textContent = '🔁';
+    loopBtn.title = 'ループ';
+    loopBtn._loop = false;
+    loopBtn.onclick = (e) => {
+      e.stopPropagation();
+      loopBtn._loop = !loopBtn._loop;
+      loopBtn.classList.toggle('active', loopBtn._loop);
+      if (pad._audio) pad._audio.loop = loopBtn._loop;
+    };
+
+    controls.appendChild(volSlider);
+    controls.appendChild(volLabel);
+    controls.appendChild(loopBtn);
+
     pad.appendChild(glow);
     pad.appendChild(prog);
     pad.appendChild(emoji);
     pad.appendChild(lbl);
+    pad.appendChild(controls);
 
     if (isDeletable) {
       const del = document.createElement('button');
@@ -509,13 +604,13 @@ function renderPads(sounds, container, isDeletable) {
       pad.appendChild(del);
     }
 
-    pad.onclick = () => playSound(s, pad, prog);
+    pad.onclick = () => playSound(s, pad, prog, volSlider, loopBtn);
     container.appendChild(pad);
   });
 }
 
 // ── Play ─────────────────────────────────────────────────
-function playSound(s, pad, prog) {
+function playSound(s, pad, prog, volSlider, loopBtn) {
   // stop same pad if re-clicked
   if (pad._audio && !pad._audio.paused) {
     pad._audio.pause();
@@ -529,9 +624,16 @@ function playSound(s, pad, prog) {
   if (s.dataUrl) {
     audio = new Audio(s.dataUrl);
   } else {
-    audio = new Audio(s.file);
+    const base = location.href.replace(/\/[^\/]*$/, '/');
+    audio = new Audio(base + s.file);
   }
-  audio.volume = parseFloat(document.getElementById('volume').value);
+
+  // 個別音量（スライダーがあればそれを使用、なければグローバル音量）
+  const vol = volSlider
+    ? parseFloat(volSlider.value)
+    : parseFloat(document.getElementById('volume').value);
+  audio.volume = vol;
+  audio.loop = loopBtn ? loopBtn._loop : false;
 
   pad.classList.add('playing');
   currentAudios.push(audio);
@@ -546,8 +648,10 @@ function playSound(s, pad, prog) {
     }
   });
   audio.addEventListener('ended', () => {
-    pad.classList.remove('playing');
-    prog.style.width = '0%';
+    if (!audio.loop) {
+      pad.classList.remove('playing');
+      prog.style.width = '0%';
+    }
   });
 }
 
