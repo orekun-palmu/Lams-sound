@@ -1,44 +1,30 @@
 [
   {
-    "id": "applause",
-    "label": "拍手",
-    "emoji": "👏",
-    "file": "sounds/applause.mp3",
+    "id": "1star",
+    "label": "バッジソング",
+    "emoji": "📛",
+    "file": "sounds/バッジソング.m4a",
     "color": "#f59e0b"
   },
   {
-    "id": "airhorn",
-    "label": "エアホーン",
-    "emoji": "📯",
-    "file": "sounds/airhorn.mp3",
+    "id": "2star",
+    "label": "進化ソング",
+    "emoji": "📛✨",
+    "file": "sounds/進化ソング.mp3",
     "color": "#ef4444"
   },
   {
-    "id": "drumroll",
-    "label": "ドラムロール",
-    "emoji": "🥁",
-    "file": "sounds/drumroll.mp3",
+    "id": "5.9star",
+    "label": "5.9誕生",
+    "emoji": "🐯",
+    "file": "sounds/5.9誕生.m4a",
     "color": "#8b5cf6"
   },
   {
-    "id": "tadaa",
-    "label": "ジャジャーン",
-    "emoji": "🎺",
-    "file": "sounds/tadaa.mp3",
+    "id": "JunkoEDM",
+    "label": "JunkoEDM",
+    "emoji": "🎶",
+    "file": "sounds/Junko.m4a",
     "color": "#06b6d4"
   },
-  {
-    "id": "fail",
-    "label": "失敗音",
-    "emoji": "😢",
-    "file": "sounds/fail.mp3",
-    "color": "#6b7280"
-  },
-  {
-    "id": "laugh",
-    "label": "笑い声",
-    "emoji": "😂",
-    "file": "sounds/laugh.mp3",
-    "color": "#10b981"
-  }
 ]
