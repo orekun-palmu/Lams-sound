@@ -1,0 +1,44 @@
+[
+  {
+    "id": "applause",
+    "label": "拍手",
+    "emoji": "👏",
+    "file": "sounds/applause.mp3",
+    "color": "#f59e0b"
+  },
+  {
+    "id": "airhorn",
+    "label": "エアホーン",
+    "emoji": "📯",
+    "file": "sounds/airhorn.mp3",
+    "color": "#ef4444"
+  },
+  {
+    "id": "drumroll",
+    "label": "ドラムロール",
+    "emoji": "🥁",
+    "file": "sounds/drumroll.mp3",
+    "color": "#8b5cf6"
+  },
+  {
+    "id": "tadaa",
+    "label": "ジャジャーン",
+    "emoji": "🎺",
+    "file": "sounds/tadaa.mp3",
+    "color": "#06b6d4"
+  },
+  {
+    "id": "fail",
+    "label": "失敗音",
+    "emoji": "😢",
+    "file": "sounds/fail.mp3",
+    "color": "#6b7280"
+  },
+  {
+    "id": "laugh",
+    "label": "笑い声",
+    "emoji": "😂",
+    "file": "sounds/laugh.mp3",
+    "color": "#10b981"
+  }
+]
