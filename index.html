@@ -253,6 +253,7 @@
       border: 1px solid var(--border);
       border-radius: 12px;
       padding: 24px;
+      position: relative; /* 子要素のabsolute指定のため追加 */
     }
     .add-panel h3 {
       font-size: 0.9rem;
@@ -305,7 +306,15 @@
       background: rgba(124,58,237,.07);
       color: var(--text);
     }
-    .drop-zone input { display: none; }
+    
+    /* 【修正箇所1】スマホでクリック無効化を防ぐための透明化 */
+    .drop-zone input { 
+      position: absolute; 
+      width: 0; 
+      height: 0; 
+      opacity: 0; 
+    }
+    
     .drop-zone .dz-icon { font-size: 1.5rem; display: block; margin-bottom: 6px; }
     .drop-zone .dz-filename {
       color: var(--accent-hi);
@@ -453,20 +462,17 @@
 </header>
 
 <main>
-  <!-- Preset pads -->
   <div class="section-label">プリセット</div>
   <div class="pad-grid" id="presetGrid"></div>
 
-  <!-- User pads -->
   <div class="section-label" id="userLabel" style="display:none">マイサウンド</div>
   <div class="pad-grid" id="userGrid"></div>
 
-  <!-- Add panel -->
   <div class="add-panel">
     <h3>＋ サウンドを追加</h3>
 
     <div class="drop-zone" id="dropZone">
-      <input type="file" id="fileInput" accept="audio/*">
+      <input type="file" id="fileInput" accept="audio/*, .mp3, .wav, .ogg, .m4a, .aac">
       <span class="dz-icon">🎵</span>
       クリックまたはドラッグ＆ドロップで音声ファイルを選択<br>
       <small>MP3 / WAV / OGG / M4A 対応</small>
@@ -535,7 +541,6 @@ COLORS.forEach((c, i) => {
 
 // ── Load presets from sounds.json ─────────────────────────
 async function loadPresets() {
-  // index.html と同じディレクトリの sounds.json を確実に参照
   const base = location.href.replace(/\/[^/]*$/, '/');
   const url  = base + 'sounds.json';
   try {
@@ -576,12 +581,10 @@ function renderPads(sounds, container, isDeletable) {
     pad.className = 'pad';
     pad.dataset.id = s.id;
 
-    // glow overlay
     const glow = document.createElement('div');
     glow.className = 'pad-glow';
     glow.style.background = `radial-gradient(circle at 50% 40%, ${s.color}33, transparent 70%)`;
 
-    // progress
     const prog = document.createElement('div');
     prog.className = 'pad-progress';
     prog.style.background = s.color;
@@ -594,7 +597,6 @@ function renderPads(sounds, container, isDeletable) {
     lbl.className = 'pad-label';
     lbl.textContent = s.label;
 
-    // volume slider + loop button + label
     const controls = document.createElement('div');
     controls.className = 'pad-controls';
 
@@ -656,7 +658,6 @@ function renderPads(sounds, container, isDeletable) {
 
 // ── Play ─────────────────────────────────────────────────
 function playSound(s, pad, prog, volSlider, loopBtn) {
-  // stop same pad if re-clicked
   if (pad._audio && !pad._audio.paused) {
     pad._audio.pause();
     pad._audio.currentTime = 0;
@@ -673,7 +674,6 @@ function playSound(s, pad, prog, volSlider, loopBtn) {
     audio = new Audio(base + s.file);
   }
 
-  // 個別音量（スライダーがあればそれを使用、なければグローバル音量）
   const vol = volSlider
     ? parseFloat(volSlider.value)
     : parseFloat(document.getElementById('volume').value);
@@ -686,7 +686,6 @@ function playSound(s, pad, prog, volSlider, loopBtn) {
 
   audio.play().catch(() => toast('⚠ 音声ファイルが読み込めませんでした'));
 
-  // progress tracking
   audio.addEventListener('timeupdate', () => {
     if (audio.duration) {
       prog.style.width = (audio.currentTime / audio.duration * 100) + '%';
@@ -723,8 +722,17 @@ dropZone.ondrop = (e) => {
 };
 fileInput.onchange = () => { if (fileInput.files[0]) handleFile(fileInput.files[0]); };
 
+// 【修正箇所3】M4Aなどの拡張子にも寛容な判定にする
 function handleFile(f) {
-  if (!f.type.startsWith('audio/')) { toast('音声ファイルを選んでください'); return; }
+  const validExts = ['.mp3', '.wav', '.m4a', '.ogg', '.aac', '.flac'];
+  const isAudioType = f.type.startsWith('audio/');
+  const hasAudioExt = validExts.some(ext => f.name.toLowerCase().endsWith(ext));
+
+  if (!isAudioType && !hasAudioExt) { 
+    toast('音声ファイルを選んでください（MP3, WAV, M4Aなど）'); 
+    return; 
+  }
+  
   selectedFile = f;
   document.getElementById('dzFilename').textContent = '✓ ' + f.name;
   document.getElementById('dzFilename').style.display = 'block';
